@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn compile *)",
+      "Bash(where mvnw *)",
+      "Read(//c/Program Files/**)",
+      "Bash(npm install *)",
+      "Bash(node -e 'const bcrypt = require\\('\\\\''bcryptjs'\\\\''\\); const hash = '\\\\''$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Pf7Uj9Ks1sKqZOFDk4aFi'\\\\''; bcrypt.compare\\('\\\\''123456'\\\\'', hash\\).then\\(r => console.log\\('\\\\''bcryptjs compare result:'\\\\'', r\\)\\)')",
+      "Bash(curl -s http://localhost:3000/api/v1/public/tenants)",
+      "Bash(mysql -uroot -p276437 -e 'UPDATE property_system.sys_user SET password = '\\\\''$2a$10$GB0x1f2wyj63p0/NyxpWJet6Iz/P2EusRcaUZEh9ZWHjt6wqWBA/C'\\\\'' WHERE 1=1; SELECT id, username, phone, LEFT\\(password, 20\\) AS pwd_prefix FROM property_system.sys_user WHERE status = 1 LIMIT 5;')",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"phone\\\\\":\\\\\"13800003333\\\\\",\\\\\"password\\\\\":\\\\\"123456\\\\\",\\\\\"tenantId\\\\\":3}\")",
+      "Bash(curl -s \"http://localhost:3000/api/v1/public/tenants?_t=1234567890\")",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\" \"http://localhost:3000/api/v1/public/tenants?_t=$\\(date +%s\\)\")",
+      "Bash(curl -s \"http://localhost:3000/api/v1/public/tenants?_t=$\\(date +%s\\)\")",
+      "Bash(nohup mvn spring-boot:run -pl .)",
+      "Bash(echo \"Backend starting in background, PID: $!\")",
+      "Read(//tmp/**)",
+      "Bash(find /c/Users/ASUS -name \"mvn\" -type f 2>/dev/null | head -3 && find \"d:/\" -maxdepth 3 -name \"mvn.cmd\" -type f 2>/dev/null | head -3)",
+      "Read(//c/Users/ASUS/**)",
+      "Read(//d//**)",
+      "Bash(nohup /c/Users/ASUS/.m2/wrapper/dists/apache-maven-3.9.14/ed7edd442f634ac1c1ef5ba2b61b6d690b5221091f1a8e1123f5fadcc967520d/bin/mvn spring-boot:run -pl .)",
+      "Bash(echo \"Backend PID: $!\")",
+      "Bash(curl -s \"http://localhost:3000/api/v1/public/tenants?_t=123\")",
+      "Bash(taskkill //PID 44448 //F)",
+      "Bash(/c/Users/ASUS/.m2/wrapper/dists/apache-maven-3.9.14/ed7edd442f634ac1c1ef5ba2b61b6d690b5221091f1a8e1123f5fadcc967520d/bin/mvn compile *)",
+      "Bash(npx vite *)",
+      "Bash(ls -la target/classes/com/property/system/controller/DeviceController.class)",
+      "Bash(ls -la target/classes/com/property/system/controller/UserAddressController.class)",
+      "Bash(stat -c \"%Y\" src/main/java/com/property/system/controller/DeviceController.java)",
+      "Bash(stat -c \"%Y\" target/classes/com/property/system/controller/DeviceController.class)",
+      "Bash(mysql -u root -p276437 property_system -e \"CREATE TABLE IF NOT EXISTS user_address \\(id BIGINT PRIMARY KEY AUTO_INCREMENT, tenant_id BIGINT NOT NULL, user_id BIGINT NOT NULL, address VARCHAR\\(200\\) NOT NULL, is_default INT DEFAULT 0, create_time DATETIME DEFAULT CURRENT_TIMESTAMP, INDEX idx_user_address \\(tenant_id, user_id\\)\\) COMMENT '用户地址（房产绑定）';\")",
+      "Bash(mysql -u root -p276437 property_system -e \"DESCRIBE user_address;\")"
+    ]
+  }
+}

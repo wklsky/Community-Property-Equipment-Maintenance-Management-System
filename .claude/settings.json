@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/v1/public/tenants)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/v1/public/tenants)",
+      "Bash(curl -s http://localhost:8080/api/v1/public/tenants)",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"phone\\\\\":\\\\\"13800001111\\\\\",\\\\\"password\\\\\":\\\\\"123456\\\\\",\\\\\"tenantId\\\\\":1}\")",
+      "Bash(find /c/Users/ASUS/.m2 -name \"spring-security-crypto*.jar\" -type f 2>/dev/null | head -3)",
+      "Read(//c/Users/ASUS/.m2/**)",
+      "Bash(cd /tmp)",
+      "Bash(java -cp \".:/c/Users/ASUS/.m2/repository/org/springframework/security/spring-security-crypto/6.2.0/spring-security-crypto-6.2.0.jar:/c/Users/ASUS/.m2/repository/commons-logging/commons-logging/1.3.6/commons-logging-1.3.6.jar\" VerifyBCrypt)"
+    ]
+  }
+}
