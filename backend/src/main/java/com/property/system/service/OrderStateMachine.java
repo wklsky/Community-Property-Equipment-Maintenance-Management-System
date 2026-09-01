@@ -1,6 +1,7 @@
 package com.property.system.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.property.system.common.RepairOrderStatus;
 import com.property.system.entity.RepairOrderFlow;
 import com.property.system.exception.BusinessException;
 import com.property.system.repository.RepairOrderFlowMapper;
@@ -43,16 +44,6 @@ public class OrderStateMachine {
     }
 
     private String getStatusName(Integer status) {
-        switch (status) {
-            case 0: return "待受理";
-            case 1: return "待派单";
-            case 2: return "待处理";
-            case 3: return "处理中";
-            case 4: return "待评价";
-            case 5: return "已完成";
-            case 6: return "已取消";
-            case 7: return "转单中";
-            default: return "未知(" + status + ")";
-        }
+        return RepairOrderStatus.getName(status);
     }
 }

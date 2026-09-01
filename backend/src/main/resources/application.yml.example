@@ -1,0 +1,121 @@
+# 社区物业设备维护管理系统 - 后端配置模板
+#
+# 使用方式：
+#   1. 复制本文件为同目录下的 application.yml
+#   2. 按注释修改带 <必填> 标记的项
+#   3. application.yml 已被 .gitignore 排除，请勿提交到仓库
+#
+# 安全约束：application.yml 中的密钥类配置（jwt.secret、数据库密码、短信 AK/SK）
+# 必须替换为自己的值，严禁使用本模板中的示例值直接上线。
+
+spring:
+  application:
+    name: property-system
+  profiles:
+    # 可选 dev / test / prod，对应 logback-spring.xml 中的 springProfile 分支
+    active: dev
+
+  # 数据源
+  datasource:
+    # MySQL 8.x 驱动；serverTimezone 必须显式指定，否则 LocalDateTime 会整体偏移 8 小时
+    url: jdbc:mysql://localhost:3306/property_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: <必填-数据库密码>
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # 文件上传大小限制（头像/报修图片/设备照片）
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+  jackson:
+    # 全站统一返回 yyyy-MM-dd HH:mm:ss，避免前端重复处理时区
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+  # 仅在 dev 开启，生产环境务必关闭，否则表结构/数据可能被引擎自动改动
+  sql:
+    init:
+      mode: never
+
+server:
+  port: 8080
+  # 部署在 Nginx 之后的真实协议转发（影响 Spring Security 生成的重定向 URL）
+  forward-headers-strategy: native
+  tomcat:
+    # 上传目录较大时适当放宽，避免大文件被截断
+    max-swallow-size: 50MB
+
+# MyBatis Plus
+mybatis-plus:
+  configuration:
+    # 下划线转驼峰：数据库 create_time <-> 实体 createTime
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    # 单条 SQL 返回行数上限，防止缺失分页条件时全表拉取
+    default-enum-type-handler: org.apache.ibatis.type.EnumTypeHandler
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  type-aliases-package: com.property.system.entity
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+# JWT 认证
+jwt:
+  # <必填> HS256 要求密钥至少 32 字节（256 bit），低于该长度 JwtTokenProvider 会打印告警
+  # 生成方式：openssl rand -base64 48
+  secret: <必填-至少32字符的随机字符串>
+  # Access Token 有效期（毫秒），默认 2 小时
+  expiration: 7200000
+  # Refresh Token 有效期（毫秒），默认 7 天
+  refresh-expiration: 604800000
+
+# 业务自定义配置
+app:
+  # 上传文件落盘目录，WebMvcConfig 会将其映射为 /api/v1/files/static/**
+  upload-dir: ./upload
+  cors:
+    # 允许跨域的来源列表，逗号分隔。生产环境必须替换为真实域名，不要保留 localhost
+    allowed-origins: http://localhost:3000,http://localhost:5173
+
+# 阿里云短信（SmsProperties，prefix = sms.aliyun）
+# 未配置时走 MockSmsSender，验证码会打印在日志中，仅用于本地开发
+sms:
+  aliyun:
+    access-key-id: <可选-短信AK>
+    access-key-secret: <可选-短信SK>
+    sign-name: <可选-短信签名>
+    template-code: 100001
+    scheme-name: 验证码方案
+    country-code: 86
+    code-length: 6
+    # 验证码有效期（秒）
+    valid-time: 300
+
+# 日志（logback-spring.xml 已按 profile 分档，此处仅指定配置文件位置）
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    com.property.system: debug
+    # 生产环境建议改为 info，避免打印 SQL 参数
+    com.property.system.repository: debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

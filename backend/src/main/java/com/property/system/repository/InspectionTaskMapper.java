@@ -4,10 +4,13 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.property.system.dto.InspectionTaskVO;
+import com.property.system.dto.StatusCountDTO;
 import com.property.system.entity.InspectionTask;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 @Mapper
 public interface InspectionTaskMapper extends BaseMapper<InspectionTask> {
@@ -32,4 +35,17 @@ public interface InspectionTaskMapper extends BaseMapper<InspectionTask> {
             @Param("tenantId") Long tenantId,
             @Param("status") Integer status,
             @Param("assignedTo") Long assignedTo);
+
+    /**
+     * 一次性统计各状态巡检任务数量，替代看板按状态逐个 selectCount 的 4 次查询
+     */
+    @Select("<script>" +
+            "SELECT status as status, COUNT(*) as count " +
+            "FROM inspection_task " +
+            "WHERE tenant_id = #{tenantId} " +
+            "<if test='workerId != null'>AND assigned_to = #{workerId}</if> " +
+            "GROUP BY status" +
+            "</script>")
+    List<StatusCountDTO> countGroupByStatus(@Param("tenantId") Long tenantId,
+                                            @Param("workerId") Long workerId);
 }

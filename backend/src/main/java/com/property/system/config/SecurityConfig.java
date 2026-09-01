@@ -3,6 +3,7 @@ package com.property.system.config;
 import com.property.system.security.JwtAuthenticationFilter;
 import com.property.system.security.JwtTokenProvider;
 import com.property.system.security.RateLimitFilter;
+import com.property.system.security.SecurityWhitelist;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -51,10 +52,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers("/api/v1/public/**").permitAll()
-                .requestMatchers("/api/v1/files/static/**").permitAll()
-                .requestMatchers("/api/v1/qrcode/**").permitAll()
+                .requestMatchers(SecurityWhitelist.PERMIT_ALL_PATTERNS).permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),

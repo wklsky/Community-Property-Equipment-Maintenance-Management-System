@@ -20,6 +20,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -30,14 +32,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
-    private static final List<String> WHITE_LIST = Arrays.asList(
-            "/api/v1/auth/**",
-            "/api/v1/public/**",
-            "/api/v1/files/static/**",
-            "/api/v1/qrcode/**",
-            "/error",
-            "/favicon.ico"
-    );
+    // 复用 SecurityWhitelist，避免与 SecurityConfig 的 permitAll 列表漂移
+    private static final List<String> WHITE_LIST = Stream.concat(
+            Arrays.stream(SecurityWhitelist.PERMIT_ALL_PATTERNS),
+            Arrays.stream(SecurityWhitelist.FRAMEWORK_PATTERNS))
+            .collect(Collectors.toList());
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,

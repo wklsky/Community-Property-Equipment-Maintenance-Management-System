@@ -1,6 +1,35 @@
-import { BASE_URL } from './config'
+/**
+ * @Author: wj 3363891051@qq.com
+ * @Date: 2026-09-01 11:20
+ * @LastEditors: wj 3363891051@qq.com
+ * @LastEditTime: 2026-09-01 11:20
+ * @FilePath: frontend-mobile/src/utils/request.js
+ * @Description: 移动端统一请求封装，处理 Token 注入、无感刷新、错误提示与 loading 管理
+ */
 
-const REQUEST_TIMEOUT = 15000
+import { BASE_URL, REQUEST_TIMEOUT } from './config'
+
+// 并发请求计数：uni 的 loading 是全局单例，若每个请求各自 show/hide，
+// 先返回的请求会提前关掉其他在途请求的 loading，故统一由计数器控制显隐
+let loadingCount = 0
+
+const showLoading = (options) => {
+  if (options.showLoading === false) return
+  loadingCount += 1
+  if (loadingCount === 1) {
+    uni.showLoading({ title: '加载中...', mask: true })
+  }
+}
+
+const hideLoading = (options) => {
+  if (options.showLoading === false) return
+  if (loadingCount > 0) {
+    loadingCount -= 1
+  }
+  if (loadingCount === 0) {
+    uni.hideLoading()
+  }
+}
 
 let isRefreshing = false
 
@@ -46,25 +75,32 @@ const refreshTokenRequest = async () => {
 
 const request = (options) => {
   return new Promise((resolve, reject) => {
+    // 重试标记必须是请求私有的：原先写在 options._retry 上会污染调用方传入的对象，
+    // 该对象若被复用会导致后续请求直接跳过刷新流程
+    let retried = false
+
     const sendRequest = (overrideToken) => {
       const token = overrideToken || uni.getStorageSync('token')
+      const timeout = options.timeout || REQUEST_TIMEOUT
 
-      if (options.showLoading !== false) {
-        uni.showLoading({ title: '加载中...', mask: true })
-      }
+      showLoading(options)
 
       let requestTask = null
-      let isTimeout = false
+      let isSettled = false
+
+      const settle = (fn, value) => {
+        if (isSettled) return
+        isSettled = true
+        hideLoading(options)
+        fn(value)
+      }
 
       const timeoutId = setTimeout(() => {
-        isTimeout = true
-        if (requestTask) {
-          requestTask.abort()
-        }
-        uni.hideLoading()
+        // H5 端 uni.request 的返回值不保证实现 abort，需可选调用避免二次抛错
+        requestTask?.abort?.()
+        settle(reject, new Error('请求超时'))
         uni.showToast({ title: '请求超时，请重试', icon: 'none' })
-        reject(new Error('请求超时'))
-      }, REQUEST_TIMEOUT)
+      }, timeout)
 
       requestTask = uni.request({
         url: BASE_URL + options.url,
@@ -77,75 +113,79 @@ const request = (options) => {
         },
         success: async (res) => {
           clearTimeout(timeoutId)
-          if (isTimeout) return
-
-          uni.hideLoading()
+          if (isSettled) return
 
           if (res.statusCode === 200) {
             if (res.data.code === 200) {
-              resolve(res.data)
-            } else {
-
-              const errorMsg = getErrorMessage(res.data.code) || res.data.message || '请求失败'
-              if (options.showError !== false) {
-                uni.showToast({ title: errorMsg, icon: 'none' })
-              }
-              reject(res.data)
-            }
-          } else if (res.statusCode === 401) {
-
-            if (options._retry) {
-              handleUnauthorized()
-              reject(res)
+              settle(resolve, res.data)
               return
             }
-            options._retry = true
+
+            const errorMsg = getErrorMessage(res.data.code) || res.data.message || '请求失败'
+            if (options.showError !== false) {
+              uni.showToast({ title: errorMsg, icon: 'none' })
+            }
+            settle(reject, res.data)
+            return
+          }
+
+          if (res.statusCode === 401) {
+            if (retried) {
+              handleUnauthorized()
+              settle(reject, res)
+              return
+            }
+            retried = true
 
             if (!isRefreshing) {
               isRefreshing = true
               try {
                 const newToken = await refreshTokenRequest()
                 executeRefreshQueue(true, newToken)
-
+                clearTimeout(timeoutId)
+                isSettled = true
+                hideLoading(options)
                 sendRequest(newToken)
                 return
               } catch (refreshErr) {
                 executeRefreshQueue(false)
                 handleUnauthorized()
-                reject(res)
+                settle(reject, res)
                 return
               } finally {
                 isRefreshing = false
               }
             } else {
-
               refreshQueue.push({
                 resolve: (newToken) => {
+                  clearTimeout(timeoutId)
+                  isSettled = true
+                  hideLoading(options)
                   sendRequest(newToken)
                 },
                 reject: () => {
                   handleUnauthorized()
-                  reject(res)
+                  settle(reject, res)
                 }
               })
+              return
             }
-          } else {
-            if (options.showError !== false) {
-              const httpMsg = HTTP_ERROR_MESSAGES[res.statusCode] || `请求失败(${res.statusCode})`
-              uni.showToast({ title: httpMsg, icon: 'none' })
-            }
-            reject(res)
           }
+
+          if (options.showError !== false) {
+            const httpMsg = HTTP_ERROR_MESSAGES[res.statusCode] || `请求失败(${res.statusCode})`
+            uni.showToast({ title: httpMsg, icon: 'none' })
+          }
+          settle(reject, res)
         },
         fail: (err) => {
           clearTimeout(timeoutId)
-          if (isTimeout) return
+          if (isSettled) return
 
-          uni.hideLoading()
           if (options.showError !== false) {
             uni.showToast({ title: '网络连接失败', icon: 'none' })
           }
-          reject(err)
+          settle(reject, err)
         }
       })
     }
@@ -155,6 +195,7 @@ const request = (options) => {
 }
 
 const handleUnauthorized = () => {
+  loadingCount = 0
   uni.removeStorageSync('token')
   uni.removeStorageSync('refreshToken')
   uni.removeStorageSync('userInfo')

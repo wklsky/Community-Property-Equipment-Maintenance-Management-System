@@ -1,9 +1,11 @@
 package com.property.system.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.property.system.common.RepairOrderStatus;
 import com.property.system.dto.DashboardVO;
 import com.property.system.dto.Result;
-import com.property.system.entity.Device;
+import com.property.system.dto.StatusCountDTO;
 import com.property.system.entity.InspectionTask;
 import com.property.system.entity.RepairOrder;
 import com.property.system.repository.DeviceMapper;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +31,9 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/dashboard")
 @RequiredArgsConstructor
 public class DashboardController {
+
+    // 看板「最近工单」展示条数
+    private static final int RECENT_ORDER_LIMIT = 5;
 
     private final RepairOrderMapper orderMapper;
     private final DeviceMapper deviceMapper;
@@ -48,23 +54,30 @@ public class DashboardController {
             filterByWorker = userId;
         }
 
+        // 各状态数量改为一次 GROUP BY 取回，缺失状态补 0；
+        // 原先 7 个状态各自 selectCount + 1 次总数统计，共 8 条 SQL
+        Map<Integer, Long> orderCountMap = toCountMap(
+                orderMapper.countGroupByStatus(tenantId, filterByUserId, filterByWorker));
+
         DashboardVO.OrderStats orderStats = DashboardVO.OrderStats.builder()
-                .pendingAccept(countOrders(tenantId, 0, filterByUserId, filterByWorker))
-                .pendingAssign(countOrders(tenantId, 1, filterByUserId, filterByWorker))
-                .pending(countOrders(tenantId, 2, filterByUserId, filterByWorker))
-                .processing(countOrders(tenantId, 3, filterByUserId, filterByWorker))
-                .pendingEvaluate(countOrders(tenantId, 4, filterByUserId, filterByWorker))
-                .completed(countOrders(tenantId, 5, filterByUserId, filterByWorker))
-                .cancelled(countOrders(tenantId, 6, filterByUserId, filterByWorker))
-                .total(countOrders(tenantId, null, filterByUserId, filterByWorker))
+                .pendingAccept(countOf(orderCountMap, 0))
+                .pendingAssign(countOf(orderCountMap, 1))
+                .pending(countOf(orderCountMap, 2))
+                .processing(countOf(orderCountMap, 3))
+                .pendingEvaluate(countOf(orderCountMap, 4))
+                .completed(countOf(orderCountMap, 5))
+                .cancelled(countOf(orderCountMap, 6))
+                .total(orderCountMap.values().stream().mapToLong(Long::longValue).sum())
                 .build();
 
+        Map<Integer, Long> deviceCountMap = toCountMap(deviceMapper.countGroupByStatus(tenantId));
+
         DashboardVO.DeviceStats deviceStats = DashboardVO.DeviceStats.builder()
-                .normal(countDevices(tenantId, 1))
-                .faulty(countDevices(tenantId, 2))
-                .repairing(countDevices(tenantId, 3))
-                .disabled(countDevices(tenantId, 4))
-                .total(countDevices(tenantId, null))
+                .normal(countOf(deviceCountMap, 1))
+                .faulty(countOf(deviceCountMap, 2))
+                .repairing(countOf(deviceCountMap, 3))
+                .disabled(countOf(deviceCountMap, 4))
+                .total(deviceCountMap.values().stream().mapToLong(Long::longValue).sum())
                 .build();
 
         LambdaQueryWrapper<InspectionTask> taskWrapper = new LambdaQueryWrapper<InspectionTask>()
@@ -76,24 +89,28 @@ public class DashboardController {
         }
         long completedToday = taskMapper.selectCount(taskWrapper);
 
+        Map<Integer, Long> taskCountMap = toCountMap(taskMapper.countGroupByStatus(tenantId, filterByWorker));
+
         DashboardVO.InspectionStats inspectionStats = DashboardVO.InspectionStats.builder()
-                .pending(countTasks(tenantId, 0, filterByWorker))
-                .processing(countTasks(tenantId, 1, filterByWorker))
+                .pending(countOf(taskCountMap, 0))
+                .processing(countOf(taskCountMap, 1))
                 .completedToday(completedToday)
-                .total(countTasks(tenantId, null, filterByWorker))
+                .total(taskCountMap.values().stream().mapToLong(Long::longValue).sum())
                 .build();
 
         LambdaQueryWrapper<RepairOrder> recentWrapper = new LambdaQueryWrapper<RepairOrder>()
                 .eq(RepairOrder::getTenantId, tenantId)
-                .orderByDesc(RepairOrder::getCreateTime)
-                .last("LIMIT 5");
+                .orderByDesc(RepairOrder::getCreateTime);
         if (filterByUserId != null) {
             recentWrapper.eq(RepairOrder::getUserId, filterByUserId);
         } else if (filterByWorker != null) {
             recentWrapper.eq(RepairOrder::getAssignTo, filterByWorker);
         }
 
-        List<DashboardVO.RecentOrder> recentOrders = orderMapper.selectList(recentWrapper)
+        // 用分页插件取前 5 条，替代 last("LIMIT 5") 拼接裸 SQL 片段
+        Page<RepairOrder> recentPage = orderMapper.selectPage(new Page<>(1, RECENT_ORDER_LIMIT), recentWrapper);
+
+        List<DashboardVO.RecentOrder> recentOrders = recentPage.getRecords()
                 .stream()
                 .map(order -> DashboardVO.RecentOrder.builder()
                         .id(order.getId())
@@ -143,40 +160,29 @@ public class DashboardController {
         return Result.success(dashboard);
     }
 
-    private long countOrders(Long tenantId, Integer status, Long userId, Long workerId) {
-        return orderMapper.selectCount(
-                new LambdaQueryWrapper<RepairOrder>()
-                        .eq(RepairOrder::getTenantId, tenantId)
-                        .eq(status != null, RepairOrder::getStatus, status)
-                        .eq(userId != null, RepairOrder::getUserId, userId)
-                        .eq(workerId != null, RepairOrder::getAssignTo, workerId));
+    /**
+     * 将分组统计结果转为「状态码 -> 数量」索引。
+     * 数据库中不存在某状态时 GROUP BY 不会返回该行，看板需要显式补 0 而非留空，故由 countOf 兜底。
+     */
+    private Map<Integer, Long> toCountMap(List<StatusCountDTO> rows) {
+        Map<Integer, Long> countMap = new HashMap<>();
+        if (rows == null) {
+            return countMap;
+        }
+        for (StatusCountDTO row : rows) {
+            if (row.getStatus() == null) {
+                continue;
+            }
+            countMap.put(row.getStatus(), row.getCount() == null ? 0L : row.getCount());
+        }
+        return countMap;
     }
 
-    private long countDevices(Long tenantId, Integer status) {
-        return deviceMapper.selectCount(
-                new LambdaQueryWrapper<Device>()
-                        .eq(Device::getTenantId, tenantId)
-                        .eq(status != null, Device::getStatus, status));
-    }
-
-    private long countTasks(Long tenantId, Integer status, Long workerId) {
-        return taskMapper.selectCount(
-                new LambdaQueryWrapper<InspectionTask>()
-                        .eq(InspectionTask::getTenantId, tenantId)
-                        .eq(status != null, InspectionTask::getStatus, status)
-                        .eq(workerId != null, InspectionTask::getAssignedTo, workerId));
+    private long countOf(Map<Integer, Long> countMap, Integer status) {
+        return countMap.getOrDefault(status, 0L);
     }
 
     private String getStatusName(Integer status) {
-        switch (status) {
-            case 0: return "待受理";
-            case 1: return "待派单";
-            case 2: return "待处理";
-            case 3: return "处理中";
-            case 4: return "待评价";
-            case 5: return "已完成";
-            case 6: return "已取消";
-            default: return "未知";
-        }
+        return RepairOrderStatus.getName(status);
     }
 }

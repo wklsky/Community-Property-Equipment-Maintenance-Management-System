@@ -78,16 +78,16 @@ const service = axios.create({
   withCredentials: false
 })
 
+// 在途请求的 AbortController 集合，key 为请求唯一 ID（见请求拦截器中写入的 requestId）
 const pendingRequests = new Map()
 
-const generateRequestKey = (config) => {
-  const { method, url, params, data } = config
-  return [method, url, JSON.stringify(params), JSON.stringify(data)].join('&')
-}
+let requestSeq = 0
 
 const removePendingRequest = (config) => {
-  const requestKey = generateRequestKey(config)
-  pendingRequests.delete(requestKey)
+  const requestId = config?.metadata?.requestId
+  if (requestId) {
+    pendingRequests.delete(requestId)
+  }
 }
 
 service.interceptors.request.use(
@@ -111,6 +111,17 @@ service.interceptors.request.use(
 
     config.metadata = { startTime: new Date() }
 
+    // 为每个请求绑定独立的 AbortController，使 cancelAllRequests() 能真正中断在途请求。
+    // 调用方已自带 signal 时不再托管，避免覆盖其取消语义；
+    // allowRepeat 用于上传等允许并发重复的场景，登记后会被 cancelAllRequests 误伤，故跳过
+    if (!config.signal && !config.allowRepeat) {
+      const controller = new AbortController()
+      const requestId = `${Date.now()}-${++requestSeq}`
+      config.signal = controller.signal
+      config.metadata.requestId = requestId
+      pendingRequests.set(requestId, controller)
+    }
+
     return config
   },
   (error) => {
@@ -124,7 +135,7 @@ service.interceptors.response.use(
 
     removePendingRequest(response.config)
 
-    if (process.env.NODE_ENV === 'development' && response.config.metadata) {
+    if (import.meta.env.DEV && response.config.metadata) {
       const duration = new Date() - response.config.metadata.startTime
       if (duration > 1000) {
         console.warn(`慢请求警告: ${response.config.url} 耗时 ${duration}ms`)
@@ -173,8 +184,11 @@ service.interceptors.response.use(
       removePendingRequest(error.config)
     }
 
+    // 主动取消（登出时 cancelAllRequests、组件卸载、防抖）属于预期行为，不向用户报错
     if (axios.isCancel(error)) {
-      console.log('请求已取消:', error.message)
+      if (import.meta.env.DEV) {
+        console.warn('请求已取消:', error.message)
+      }
       return Promise.reject(error)
     }
 
@@ -191,6 +205,10 @@ service.interceptors.response.use(
     const status = error.response?.status
     const serverMessage = error.response?.data?.message || ''
     const errorMessage = serverMessage || ERROR_MESSAGES[status] || error.message || '网络错误'
+
+    // silent 用于轮询、预检等无需打扰用户的场景。
+    // 401 不受 silent 约束：会话失效必须显式告知，否则用户会对空白页面无感知
+    const isSilent = error.config?.silent === true
 
     if (status === 401) {
 
@@ -232,17 +250,20 @@ service.interceptors.response.use(
         handleUnauthorized(errorMessage)
       }
     } else if (status === 403) {
-      ElMessage.error('没有权限访问该资源')
+      if (!isSilent) ElMessage.error('没有权限访问该资源')
     } else if (status === 404) {
-      ElMessage.error('请求的资源不存在')
+      if (!isSilent) ElMessage.error('请求的资源不存在')
     } else if (status >= 500) {
-      ElNotification({
-        title: '服务器错误',
-        message: errorMessage,
-        type: 'error',
-        duration: 5000
-      })
-    } else if (!error.config?.silent) {
+      // 5xx 属于服务端故障，保留独立通知样式以便与业务错误区分
+      if (!isSilent) {
+        ElNotification({
+          title: '服务器错误',
+          message: errorMessage,
+          type: 'error',
+          duration: 5000
+        })
+      }
+    } else if (!isSilent) {
       ElMessage.error(errorMessage)
     }
 
@@ -376,9 +397,9 @@ const request = {
   }
 }
 
-export const cancelAllRequests = () => {
-  pendingRequests.forEach((cancel, key) => {
-    cancel('取消所有请求')
+export const cancelAllRequests = (reason = '取消所有请求') => {
+  pendingRequests.forEach((controller) => {
+    controller.abort(reason)
   })
   pendingRequests.clear()
 }

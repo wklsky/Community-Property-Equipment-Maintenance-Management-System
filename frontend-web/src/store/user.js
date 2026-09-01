@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login as loginApi } from '@/api/auth'
-import router from '@/router'
+import router, { resetRouter } from '@/router'
 
 export const useUserStore = defineStore('user', () => {
 
@@ -143,6 +143,10 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('userInfo')
     localStorage.removeItem('permissions')
     localStorage.removeItem('roles')
+
+    // 必须同步移除按权限动态注入的路由：同一浏览器内切换到低权限账号时，
+    // 上一账号的路由（如超管的 /admin/tenants）会残留在路由表中，造成越权访问
+    resetRouter()
   }
 
   function resetState() {

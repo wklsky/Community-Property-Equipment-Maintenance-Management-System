@@ -285,11 +285,8 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  if (userStore.isSuperAdmin && to.path !== '/admin/tenants') {
-    next('/admin/tenants')
-    return
-  }
-
+  // 超级管理员的默认落地页由 Login.vue 在登录成功后决定，此处不再强制重定向；
+  // 否则超管登录后访问工作台、工单等任何页面都会被踢回租户管理页
   if (to.meta?.permission && !userStore.hasPermission(to.meta.permission)) {
     ElMessage.error('您没有权限访问该页面')
     next('/dashboard')

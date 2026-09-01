@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.property.system.dto.DashboardVO;
 import com.property.system.dto.RepairOrderVO;
+import com.property.system.dto.StatusCountDTO;
 import com.property.system.entity.RepairOrder;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -66,4 +67,20 @@ public interface RepairOrderMapper extends BaseMapper<RepairOrder> {
                                                       @Param("startDate") String startDate,
                                                       @Param("userId") Long userId,
                                                       @Param("workerId") Long workerId);
+
+    /**
+     * 一次性统计各状态工单数量，替代看板按状态逐个 selectCount 的 8 次查询。
+     * userId 与 workerId 分别对应业主（只看自己提交）和维修工（只看指派给自己）的数据视角，两者互斥，由调用方保证不同时传入。
+     */
+    @Select("<script>" +
+            "SELECT status as status, COUNT(*) as count " +
+            "FROM repair_order " +
+            "WHERE tenant_id = #{tenantId} " +
+            "<if test='userId != null'>AND user_id = #{userId}</if> " +
+            "<if test='workerId != null'>AND assign_to = #{workerId}</if> " +
+            "GROUP BY status" +
+            "</script>")
+    List<StatusCountDTO> countGroupByStatus(@Param("tenantId") Long tenantId,
+                                            @Param("userId") Long userId,
+                                            @Param("workerId") Long workerId);
 }

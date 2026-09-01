@@ -31,15 +31,29 @@ mysql -u root -p < ../community_data.sql
 
 ### 2. 修改配置
 
-编辑 `src/main/resources/application.yml`，修改数据库连接信息：
+`application.yml` 已被 `.gitignore` 排除（含数据库密码与 JWT 密钥，禁止入库），
+首次启动需要从模板复制一份：
 
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/property_system
-    username: root
-    password: your_password
+```bash
+cp src/main/resources/application.yml.example src/main/resources/application.yml
 ```
+
+然后编辑 `application.yml`，至少修改以下三项：
+
+| 配置项 | 说明 | 约束 |
+|--------|------|------|
+| `spring.datasource.password` | 数据库密码 | 必填 |
+| `jwt.secret` | JWT 签名密钥 | 必填，HS256 要求**至少 32 字节** |
+| `sms.aliyun.*` | 阿里云短信 | 可选；留空走 `MockSmsSender`，验证码打印在日志中 |
+
+生成符合长度要求的密钥：
+
+```bash
+openssl rand -base64 48
+```
+
+> `jwt.secret` 长度不足 32 字节时 `JwtTokenProvider` 会在启动日志中打印告警，
+> 且过短密钥会显著削弱签名强度，生产环境必须替换。
 
 ### 3. 运行项目
 
@@ -196,7 +210,9 @@ mvn clean package && java -jar target/property-system-1.0.0.jar
 - `@RequirePermission`：检查用户是否拥有指定权限码（支持 AND/OR 逻辑）
 - `@RequireRole`：检查用户角色（超级管理员自动通过）
 - `@RequireSuperAdmin`：仅超级管理员可访问
-- 权限码映射见 `UserController.getRolePermissions()`
+- 权限码映射目前硬编码在前端 `frontend-web/src/store/user.js` 的 `getRolePermissions()` 中，
+  与后端 `SysPermission` 表各自维护。前端映射仅控制菜单/按钮**显示**，真正的拦截由上述注解完成，
+  新增权限时两处需同步修改（已列为待优化项）
 
 ## 测试用例
 
