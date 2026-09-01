@@ -72,7 +72,10 @@
 </template>
 
 <script setup>
-import { ref, onLoad } from '@dcloudio/uni-app'
+// ref 属于 Vue 响应式 API，@dcloudio/uni-app 只导出页面生命周期钩子，
+// 混在一起导入会在 H5 构建时因找不到命名导出而直接编译失败
+import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { getDevices } from '../../api/device'
 import { getCategories } from '../../api/common'
 

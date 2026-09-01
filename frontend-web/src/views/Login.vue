@@ -136,7 +136,7 @@
 
     <CaptchaDialog
       v-model="captchaVisible"
-      :image="captcha.image"
+      :image="captchaImage"
       @refresh="captcha.refresh"
       @confirm="handleCaptchaConfirm"
     />
@@ -185,6 +185,10 @@ const {
   submit,
   handleCaptchaConfirm
 } = useLogin()
+
+// captcha 是一个持有多个 Ref 的普通对象，模板不会自动解包其内部的 Ref，
+// 因此在这里单独取出 image，保证传给子组件的是字符串而非 Ref
+const { image: captchaImage } = captcha
 
 const resetDialogRef = ref<InstanceType<typeof ResetPasswordDialog> | null>(null)
 

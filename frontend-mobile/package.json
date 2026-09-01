@@ -1,37 +1,34 @@
 {
-  "name": "property-system-mobile",
+  "name": "community-mobile-workspace",
   "version": "1.0.0",
-  "description": "社区物业设备维护管理系统移动端",
-  "main": "main.js",
+  "private": true,
+  "description": "社区物业设备维护管理系统 · 移动端 Monorepo 工作区",
 
   "scripts": {
-    "dev:h5": "uni -p h5",
-    "build:h5": "uni build -p h5",
-    "dev:mp-weixin": "uni -p mp-weixin",
-    "build:mp-weixin": "uni build -p mp-weixin",
-    "dev:app": "uni -p app",
-    "build:app": "uni build -p app"
-  },
+    "dev:owner": "pnpm --filter @community/owner-app dev:h5",
+    "dev:worker": "pnpm --filter @community/worker-app dev:h5",
+    "dev:legacy": "pnpm --filter @community/legacy-app dev:h5",
 
-  "dependencies": {
-    "@dcloudio/uni-app": "3.0.0-3090820231124001",
-    "@dcloudio/uni-app-plus": "3.0.0-3090820231124001",
-    "@dcloudio/uni-components": "3.0.0-3090820231124001",
-    "@dcloudio/uni-h5": "3.0.0-3090820231124001",
-    "@dcloudio/uni-mp-weixin": "3.0.0-3090820231124001",
+    "build:owner": "pnpm --filter @community/owner-app build:h5",
+    "build:worker": "pnpm --filter @community/worker-app build:h5",
+    "build:legacy": "pnpm --filter @community/legacy-app build:h5",
 
-    "pinia": "2.0.36",
-    "vue": "3.2.47",
-    "vue-demi": "0.14.10"
+    "build:mp:owner": "pnpm --filter @community/owner-app build:mp-weixin",
+    "build:mp:worker": "pnpm --filter @community/worker-app build:mp-weixin",
+    "build:mp:legacy": "pnpm --filter @community/legacy-app build:mp-weixin",
+
+    "typecheck": "pnpm -r --filter @community/shared --filter @community/owner-app --filter @community/worker-app exec vue-tsc --noEmit"
   },
 
   "devDependencies": {
-    "@dcloudio/types": "3.4.4",
-    "@dcloudio/uni-automator": "3.0.0-3090820231124001",
-    "@dcloudio/uni-cli-shared": "3.0.0-3090820231124001",
-    "@dcloudio/uni-stacktracey": "3.0.0-3090820231124001",
-    "@dcloudio/vite-plugin-uni": "3.0.0-3090820231124001",
+    "typescript": "~5.4.5",
+    "vue-tsc": "^2.0.19"
+  },
 
-    "vite": "4.4.9"
+
+
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
   }
 }

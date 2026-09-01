@@ -1,4 +1,11 @@
+packages:
+  - 'packages/*'
+
+# pnpm 出于安全考虑默认不执行依赖的构建脚本，而 esbuild / vue-demi 这类
+# 依赖原生二进制或构建产物的包不放行会直接报 "Cannot find module"。
+# pnpm v11 起该配置统一收敛到 pnpm-workspace.yaml 的 allowBuilds 字段，
+# 写在 package.json 的 pnpm 字段里会被忽略
 allowBuilds:
-  core-js: set this to true or false
-  esbuild: set this to true or false
-  vue-demi: set this to true or false
+  core-js: true
+  esbuild: true
+  vue-demi: true

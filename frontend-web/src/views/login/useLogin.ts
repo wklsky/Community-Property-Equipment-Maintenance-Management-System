@@ -242,6 +242,13 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginReturn {
     stopCountdown()
     smsCountdown.value = 0
     captchaVisible.value = false
+
+    // 超级管理员登录只支持密码模式：短信验证码必须由租户下的真实手机号接收。
+    // 若带着"无租户"状态进入短信模式，提交时会以 tenantId=null 请求，后端必然报错
+    if (next === 'sms' && isSuperAdminLogin.value) {
+      isSuperAdminLogin.value = false
+    }
+
     formRef.value?.clearValidate()
   }
 
@@ -273,16 +280,15 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginReturn {
   const handleSendSmsCode = async (): Promise<void> => {
     if (smsCountdown.value > 0) return
 
-    let tenantId = form.value.tenantId
-    if (!isSuperAdminLogin.value) {
-      const resolved = resolveTenant()
-      if (!resolved.ok) {
-        ElMessage.warning(resolved.message)
-        return
-      }
-      tenantId = resolved.tenant.id
-      form.value.tenantId = tenantId
+    // 短信验证码必须绑定到具体租户下的手机号，因此这里不区分是否勾选了超级管理员，
+    // 一律要求先解析出租户，否则会以 tenantId=null 发出无效请求
+    const resolved = resolveTenant()
+    if (!resolved.ok) {
+      ElMessage.warning(resolved.message)
+      return
     }
+    form.value.tenantId = resolved.tenant.id
+    const tenantId = resolved.tenant.id
 
     const phone = form.value.account.trim()
     if (!ACCOUNT_PATTERN.test(phone)) {
@@ -291,7 +297,7 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginReturn {
     }
 
     try {
-      await sendCode({ phone, tenantId: tenantId as number }, { silent: true })
+      await sendCode({ phone, tenantId }, { silent: true })
       ElMessage.success('验证码已发送，请注意查收')
       startCountdown()
     } catch (error) {
@@ -301,6 +307,9 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginReturn {
   }
 
   // ---------- 登录 ----------
+
+  const resolveDefaultHomePath = (result: LoginResult): string =>
+    result.isSuperAdmin === true ? SUPER_ADMIN_HOME_PATH : DEFAULT_HOME_PATH
 
   const handleSuccess = (result: LoginResult): void => {
     userStore.setToken(result.token)
@@ -319,9 +328,6 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginReturn {
 
     router.push(options.resolveHomePath?.(result) ?? resolveDefaultHomePath(result))
   }
-
-  const resolveDefaultHomePath = (result: LoginResult): string =>
-    result.isSuperAdmin === true ? SUPER_ADMIN_HOME_PATH : DEFAULT_HOME_PATH
 
   const handleFailure = (error: unknown): void => {
     console.error('[login] 登录失败:', error)
@@ -401,6 +407,12 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginReturn {
     }
 
     if (mode.value === 'password') {
+      // canvas 被浏览器禁用时拿不到验证码图片，此时降级为直接登录：
+      // 让用户面对一张看不见的验证码比少一道前端校验更糟糕
+      if (!captcha.available.value) {
+        await loginByPassword()
+        return
+      }
       // 每次触发登录都换一张图，防止上一轮的验证码被重放
       captcha.reset()
       captchaVisible.value = true

@@ -25,6 +25,12 @@ const CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXY345678'
 export interface UseCaptchaReturn {
   /** 验证码图片的 dataURL，纯数据形式便于任意 UI 组件渲染（H5 / 弹窗 / 小程序均可复用） */
   image: Ref<string>
+  /**
+   * 验证码是否可用。
+   * 取不到 canvas 2d 上下文时图片为空，用户看不到验证码内容，
+   * 此时调用方必须跳过验证环节，否则用户会被一个看不见的验证码永久挡在登录页外
+   */
+  available: Ref<boolean>
   /** 连续校验失败次数，供 UI 决定是否高亮提示 */
   failCount: Ref<number>
   refresh: () => void
@@ -86,6 +92,7 @@ const createCaptcha = (): { code: string; image: string } => {
 
 export function useCaptcha(): UseCaptchaReturn {
   const image = ref('')
+  const available = ref(true)
   const failCount = ref(0)
   let currentCode = ''
 
@@ -93,6 +100,7 @@ export function useCaptcha(): UseCaptchaReturn {
     const captcha = createCaptcha()
     currentCode = captcha.code
     image.value = captcha.image
+    available.value = captcha.image !== ''
   }
 
   const verify = (input: string): boolean => {
@@ -119,5 +127,5 @@ export function useCaptcha(): UseCaptchaReturn {
 
   reset()
 
-  return { image, failCount, refresh, verify, reset }
+  return { image, available, failCount, refresh, verify, reset }
 }
