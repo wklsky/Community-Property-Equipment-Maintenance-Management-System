@@ -68,6 +68,13 @@ const BUSINESS_ERROR_MESSAGES = {
   6002: '巡检任务不存在'
 }
 
+/**
+ * 构造带业务元信息的异常对象。
+ * 调用方（如登录页）需要按后端业务码区分「租户不存在(3001)」与「密码错误(1003)」
+ * 给出不同引导，仅凭 message 文案映射在后端调整措辞后就会失效，故必须透传 code
+ */
+const createRequestError = (message, meta = {}) => Object.assign(new Error(message), meta)
+
 const service = axios.create({
   baseURL: '/api/v1',
   timeout: 15000,
@@ -156,12 +163,12 @@ service.interceptors.response.use(
 
     if (res.code === 401 || res.code === 1004 || res.code === 1005) {
       handleUnauthorized(errorMessage)
-      return Promise.reject(new Error(errorMessage))
+      return Promise.reject(createRequestError(errorMessage, { code: res.code }))
     }
 
     if (res.code === 403 || res.code === 2001 || res.code === 2003) {
       ElMessage.error('您没有权限执行此操作')
-      return Promise.reject(new Error(errorMessage))
+      return Promise.reject(createRequestError(errorMessage, { code: res.code }))
     }
 
     if ([3001, 3002, 3003].includes(res.code)) {
@@ -170,13 +177,13 @@ service.interceptors.response.use(
       if (res.code === 3002) {
         handleUnauthorized('租户已被禁用，请联系管理员')
       }
-      return Promise.reject(new Error(errorMessage))
+      return Promise.reject(createRequestError(errorMessage, { code: res.code }))
     }
 
     if (!response.config.silent) {
       ElMessage.error(errorMessage)
     }
-    return Promise.reject(new Error(errorMessage))
+    return Promise.reject(createRequestError(errorMessage, { code: res.code }))
   },
   async (error) => {
 
@@ -193,6 +200,9 @@ service.interceptors.response.use(
     }
 
     if (!error.response) {
+      // 无 response 意味着请求根本没到达服务端（断网 / 后端未启动 / 被浏览器拦截），
+      // 与 5xx 区分开：这类问题用户自己能排查，提示语要指向"检查网络"
+      error.isNetworkError = true
       ElNotification({
         title: '网络错误',
         message: '无法连接到服务器，请检查网络连接',
@@ -201,6 +211,10 @@ service.interceptors.response.use(
       })
       return Promise.reject(error)
     }
+
+    // 把 HTTP 状态码与后端业务码一并挂在异常上，供调用方做精细化兜底
+    error.status = error.response?.status
+    error.code = error.response?.data?.code ?? null
 
     const status = error.response?.status
     const serverMessage = error.response?.data?.message || ''

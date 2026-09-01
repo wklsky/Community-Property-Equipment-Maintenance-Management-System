@@ -25,342 +25,179 @@
         </div>
       </div>
     </div>
+
     <div class="login-right">
       <div class="login-box">
         <h2 class="login-title">欢迎登录</h2>
-        <p class="login-subtitle">请输入您的账号信息</p>
+        <p class="login-subtitle">请输入租户、账号与密码</p>
 
-        <!-- 登录方式切换 -->
         <div class="login-tabs">
-          <span class="tab-item" :class="{ active: loginMode === 'password' }" @click="switchMode('password')">密码登录</span>
-          <span class="tab-item" :class="{ active: loginMode === 'code' }" @click="switchMode('code')">验证码登录</span>
+          <span
+            class="tab-item"
+            :class="{ active: mode === 'password' }"
+            @click="switchMode('password')"
+          >
+            密码登录
+          </span>
+          <span class="tab-item" :class="{ active: mode === 'sms' }" @click="switchMode('sms')">
+            短信登录
+          </span>
         </div>
 
-        <div class="super-admin-check" v-if="loginMode === 'password'">
-          <el-checkbox v-model="isSuperAdminLogin" @change="onSuperAdminChange">超级管理员登录</el-checkbox>
-        </div>
+        <el-checkbox
+          v-if="mode === 'password'"
+          v-model="isSuperAdminLogin"
+          class="super-admin-check"
+          @change="toggleSuperAdmin"
+        >
+          超级管理员登录
+        </el-checkbox>
 
-        <!-- 密码登录表单 -->
-        <el-form v-if="loginMode === 'password'" ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="0" size="large">
-          <el-form-item prop="tenantId" v-if="!isSuperAdminLogin">
-            <el-select v-model="passwordForm.tenantId" placeholder="请选择租户" style="width: 100%">
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          label-width="0"
+          size="large"
+        >
+          <el-form-item v-if="!isSuperAdminLogin" prop="tenantKeyword">
+            <el-autocomplete
+              v-model="form.tenantKeyword"
+              class="full-width"
+              value-key="name"
+              placeholder="请输入租户 / 社区名称"
+              clearable
+              :fetch-suggestions="queryTenants"
+              :trigger-on-focus="true"
+              @select="handleTenantSelect"
+            >
               <template #prefix>
                 <el-icon><OfficeBuilding /></el-icon>
               </template>
-              <el-option v-for="t in tenants" :key="t.id" :label="t.name" :value="t.id" />
-            </el-select>
+            </el-autocomplete>
           </el-form-item>
-          <el-form-item prop="phone">
-            <el-input v-model="passwordForm.phone" placeholder="请输入手机号">
+
+          <el-form-item prop="account">
+            <el-input v-model="form.account" maxlength="11" placeholder="请输入账号(手机号)" clearable>
               <template #prefix>
                 <el-icon><User /></el-icon>
               </template>
             </el-input>
           </el-form-item>
-          <el-form-item prop="password">
-            <el-input v-model="passwordForm.password" type="password" placeholder="请输入密码" show-password @keyup.enter="handlePasswordLogin">
+
+          <el-form-item v-if="mode === 'password'" prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              show-password
+              placeholder="请输入密码"
+              @keyup.enter="submit"
+            >
               <template #prefix>
                 <el-icon><Lock /></el-icon>
               </template>
             </el-input>
           </el-form-item>
-          <el-form-item>
-            <el-button type="primary" style="width: 100%; height: 48px;" :loading="loading" @click="handlePasswordLogin">
-              登 录
-            </el-button>
-          </el-form-item>
-          <div class="form-extra">
-            <el-button link type="primary" @click="showResetDialog">忘记密码?</el-button>
-          </div>
-        </el-form>
 
-        <!-- 验证码登录表单 -->
-        <el-form v-if="loginMode === 'code'" ref="codeFormRef" :model="codeForm" :rules="codeRules" label-width="0" size="large">
-          <el-form-item prop="tenantId">
-            <el-select v-model="codeForm.tenantId" placeholder="请选择租户" style="width: 100%">
-              <template #prefix>
-                <el-icon><OfficeBuilding /></el-icon>
-              </template>
-              <el-option v-for="t in tenants" :key="t.id" :label="t.name" :value="t.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item prop="phone">
-            <el-input v-model="codeForm.phone" placeholder="请输入手机号">
-              <template #prefix>
-                <el-icon><User /></el-icon>
-              </template>
-            </el-input>
-          </el-form-item>
-          <el-form-item prop="code">
+          <el-form-item v-else prop="smsCode">
             <div class="code-row">
-              <el-input v-model="codeForm.code" placeholder="请输入验证码">
+              <el-input
+                v-model="form.smsCode"
+                maxlength="6"
+                placeholder="请输入6位短信验证码"
+                @keyup.enter="submit"
+              >
                 <template #prefix>
                   <el-icon><Key /></el-icon>
                 </template>
               </el-input>
-              <el-button class="send-code-btn" :disabled="countdown > 0" @click="handleSendCode">
-                {{ countdown > 0 ? countdown + 's' : '发送验证码' }}
+              <el-button class="send-code-btn" :disabled="smsCountdown > 0" @click="handleSendSmsCode">
+                {{ smsButtonText }}
               </el-button>
             </div>
           </el-form-item>
+
           <el-form-item>
-            <el-button type="primary" style="width: 100%; height: 48px;" :loading="loading" @click="handleCodeLogin">
+            <el-button class="submit-btn" type="primary" :loading="loading" @click="submit">
               登 录
             </el-button>
           </el-form-item>
         </el-form>
-      </div>
 
-      <!-- 重置密码对话框 -->
-      <el-dialog v-model="resetDialogVisible" title="重置密码" width="420px" :close-on-click-modal="false">
-        <el-form ref="resetFormRef" :model="resetForm" :rules="resetRules" label-width="80px" size="large">
-          <el-form-item label="租户" prop="tenantId">
-            <el-select v-model="resetForm.tenantId" placeholder="请选择租户" style="width: 100%">
-              <el-option v-for="t in tenants" :key="t.id" :label="t.name" :value="t.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="手机号" prop="phone">
-            <el-input v-model="resetForm.phone" placeholder="请输入手机号" />
-          </el-form-item>
-          <el-form-item label="验证码" prop="code">
-            <div class="code-row">
-              <el-input v-model="resetForm.code" placeholder="请输入验证码" />
-              <el-button class="send-code-btn" :disabled="resetCountdown > 0" @click="handleResetSendCode">
-                {{ resetCountdown > 0 ? resetCountdown + 's' : '发送验证码' }}
-              </el-button>
-            </div>
-          </el-form-item>
-          <el-form-item label="新密码" prop="newPassword">
-            <el-input v-model="resetForm.newPassword" type="password" placeholder="请输入新密码(6-20位)" show-password />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="resetDialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="resetLoading" @click="handleResetPassword">确认重置</el-button>
-        </template>
-      </el-dialog>
+        <div v-if="mode === 'password'" class="form-extra">
+          <el-button link type="primary" @click="openResetDialog">忘记密码?</el-button>
+        </div>
+
+        <div class="login-footer">
+          <span class="demo-account">租户、账号、密码均由物业管理员分配</span>
+        </div>
+      </div>
     </div>
+
+    <CaptchaDialog
+      v-model="captchaVisible"
+      :image="captcha.image"
+      @refresh="captcha.refresh"
+      @confirm="handleCaptchaConfirm"
+    />
+
+    <ResetPasswordDialog
+      ref="resetDialogRef"
+      :tenant-id="form.tenantId"
+      @success="handleResetSuccess"
+    />
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { CircleCheck, OfficeBuilding, User, Lock, Key } from '@element-plus/icons-vue'
-import { login, loginByCode, sendCode, resetPassword, getTenants } from '@/api/auth'
-import { useUserStore } from '@/store/user'
+<script setup lang="ts">
+/**
+ * @Author: wj 3363891051@qq.com
+ * @Date: 2026-09-01 15:20
+ * @LastEditors: wj 3363891051@qq.com
+ * @LastEditTime: 2026-09-01 15:20
+ * @FilePath: frontend-web/src/views/Login.vue
+ * @Description: 登录页视图层，仅负责布局渲染与事件绑定，全部业务逻辑下沉到 useLogin / useResetPassword
+ */
 
-const router = useRouter()
-const route = useRoute()
-const userStore = useUserStore()
+import { ref } from 'vue'
+import { CircleCheck, Key, Lock, OfficeBuilding, User } from '@element-plus/icons-vue'
+import CaptchaDialog from './login/CaptchaDialog.vue'
+import ResetPasswordDialog from './login/ResetPasswordDialog.vue'
+import { useLogin } from './login/useLogin'
+import type { LoginMode } from '@/types/auth'
 
-const loading = ref(false)
-const tenants = ref([])
-const loginMode = ref('password')
-const isSuperAdminLogin = ref(false)
+const {
+  formRef,
+  form,
+  rules,
+  mode,
+  loading,
+  isSuperAdminLogin,
+  smsCountdown,
+  smsButtonText,
+  captchaVisible,
+  captcha,
+  switchMode,
+  toggleSuperAdmin,
+  queryTenants,
+  handleTenantSelect,
+  handleSendSmsCode,
+  submit,
+  handleCaptchaConfirm
+} = useLogin()
 
-const passwordFormRef = ref()
-const passwordForm = ref({ tenantId: null, phone: '', password: '' })
-const passwordRules = {
-  tenantId: [{ required: true, message: '请选择租户', trigger: 'change' }],
-  phone: [
-    { required: true, message: '请输入手机号', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码至少6位', trigger: 'blur' }
-  ]
+const resetDialogRef = ref<InstanceType<typeof ResetPasswordDialog> | null>(null)
+
+const openResetDialog = (): void => {
+  resetDialogRef.value?.open(form.value.account)
 }
 
-const codeFormRef = ref()
-const codeForm = ref({ tenantId: null, phone: '', code: '' })
-const codeRules = {
-  tenantId: [{ required: true, message: '请选择租户', trigger: 'change' }],
-  phone: [
-    { required: true, message: '请输入手机号', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
-  ],
-  code: [{ required: true, message: '请输入验证码', trigger: 'blur' }]
-}
-const countdown = ref(0)
-let countdownTimer = null
-
-const resetDialogVisible = ref(false)
-const resetFormRef = ref()
-const resetLoading = ref(false)
-const resetForm = ref({ tenantId: null, phone: '', code: '', newPassword: '' })
-const resetRules = {
-  tenantId: [{ required: true, message: '请选择租户', trigger: 'change' }],
-  phone: [
-    { required: true, message: '请输入手机号', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
-  ],
-  code: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
-  newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度需在6-20位之间', trigger: 'blur' }
-  ]
-}
-const resetCountdown = ref(0)
-let resetCountdownTimer = null
-
-onMounted(async () => {
-  await loadTenants()
-})
-
-const loadTenants = async () => {
-  try {
-    const res = await getTenants()
-    if (res.data && Array.isArray(res.data)) {
-      tenants.value = res.data
-      if (tenants.value.length > 0) {
-        passwordForm.value.tenantId = tenants.value[0].id
-        codeForm.value.tenantId = tenants.value[0].id
-      }
-    } else {
-      ElMessage.error('加载租户列表失败，请刷新重试')
-    }
-  } catch (e) {
-    ElMessage.error('无法连接服务器，请检查后端服务是否启动')
-  }
-}
-
-const switchMode = (mode) => {
-  loginMode.value = mode
-  codeForm.value.code = ''
-  countdown.value = 0
-  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
-}
-
-const onSuperAdminChange = (val) => {
-  if (val) {
-    passwordForm.value.tenantId = null
-  } else if (tenants.value.length > 0) {
-    passwordForm.value.tenantId = tenants.value[0].id
-  }
-}
-
-const doLogin = (res) => {
-  userStore.setToken(res.data.token)
-  if (res.data.refreshToken) {
-    userStore.setRefreshToken(res.data.refreshToken)
-  }
-  userStore.setUserInfo(res.data)
-  ElMessage.success('登录成功')
-  const redirect = route.query.redirect
-  if (redirect) {
-    router.push(redirect)
-  } else if (userStore.isSuperAdmin) {
-    router.push('/admin/tenants')
-  } else {
-    router.push('/')
-  }
-}
-
-const handlePasswordLogin = async () => {
-  try {
-    await passwordFormRef.value.validate()
-  } catch (e) {
-    return
-  }
-  loading.value = true
-  try {
-    const res = await login(passwordForm.value)
-    doLogin(res)
-  } catch (e) {
-    console.error('登录失败:', e.message)
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleSendCode = async () => {
-  if (!codeForm.value.tenantId) { ElMessage.warning('请先选择租户'); return }
-  if (!codeForm.value.phone || !/^1[3-9]\d{9}$/.test(codeForm.value.phone)) {
-    ElMessage.warning('请输入正确的手机号'); return
-  }
-  try {
-    await sendCode({ phone: codeForm.value.phone, tenantId: codeForm.value.tenantId })
-    ElMessage.success('验证码已发送')
-    countdown.value = 60
-    countdownTimer = setInterval(() => {
-      countdown.value--
-      if (countdown.value <= 0) {
-        clearInterval(countdownTimer)
-        countdownTimer = null
-      }
-    }, 1000)
-  } catch (e) {
-    console.error('发送验证码失败:', e.message)
-  }
-}
-
-const handleCodeLogin = async () => {
-  try {
-    await codeFormRef.value.validate()
-  } catch (e) {
-    return
-  }
-  loading.value = true
-  try {
-    const res = await loginByCode(codeForm.value)
-    doLogin(res)
-  } catch (e) {
-    console.error('登录失败:', e.message)
-  } finally {
-    loading.value = false
-  }
-}
-
-const showResetDialog = () => {
-  resetForm.value = { tenantId: tenants.value[0]?.id || null, phone: '', code: '', newPassword: '' }
-  resetCountdown.value = 0
-  if (resetCountdownTimer) { clearInterval(resetCountdownTimer); resetCountdownTimer = null }
-  resetDialogVisible.value = true
-}
-
-const handleResetSendCode = async () => {
-  if (!resetForm.value.tenantId) { ElMessage.warning('请先选择租户'); return }
-  if (!resetForm.value.phone || !/^1[3-9]\d{9}$/.test(resetForm.value.phone)) {
-    ElMessage.warning('请输入正确的手机号'); return
-  }
-  try {
-    await sendCode({ phone: resetForm.value.phone, tenantId: resetForm.value.tenantId })
-    ElMessage.success('验证码已发送')
-    resetCountdown.value = 60
-    resetCountdownTimer = setInterval(() => {
-      resetCountdown.value--
-      if (resetCountdown.value <= 0) {
-        clearInterval(resetCountdownTimer)
-        resetCountdownTimer = null
-      }
-    }, 1000)
-  } catch (e) {
-    console.error('发送验证码失败:', e.message)
-  }
-}
-
-const handleResetPassword = async () => {
-  try {
-    await resetFormRef.value.validate()
-  } catch (e) {
-    return
-  }
-  resetLoading.value = true
-  try {
-    await resetPassword(resetForm.value)
-    ElMessage.success('密码重置成功，请使用新密码登录')
-    resetDialogVisible.value = false
-    passwordForm.value.phone = resetForm.value.phone
-    passwordForm.value.password = ''
-    loginMode.value = 'password'
-  } catch (e) {
-    console.error('重置密码失败:', e.message)
-  } finally {
-    resetLoading.value = false
-  }
+/** 重置成功后回填账号并切回密码模式，减少用户重复输入 */
+const handleResetSuccess = (payload: { phone: string }): void => {
+  form.value.account = payload.phone
+  form.value.password = ''
+  switchMode('password' as LoginMode)
+  captcha.reset()
 }
 </script>
 
@@ -450,7 +287,7 @@ const handleResetPassword = async () => {
 .login-tabs {
   display: flex;
   gap: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid #ebeef5;
 
@@ -463,7 +300,9 @@ const handleResetPassword = async () => {
     border-bottom: 2px solid transparent;
     transition: all 0.2s;
 
-    &:hover { color: #667eea; }
+    &:hover {
+      color: #667eea;
+    }
 
     &.active {
       color: #667eea;
@@ -473,9 +312,19 @@ const handleResetPassword = async () => {
   }
 }
 
+.super-admin-check {
+  margin-bottom: 16px;
+  margin-top: -8px;
+}
+
+.full-width {
+  width: 100%;
+}
+
 .code-row {
   display: flex;
   gap: 12px;
+  width: 100%;
 
   .send-code-btn {
     flex-shrink: 0;
@@ -486,15 +335,25 @@ const handleResetPassword = async () => {
   }
 }
 
-.super-admin-check {
-  margin-bottom: 16px;
-  margin-top: -8px;
+.submit-btn {
+  width: 100%;
+  height: 48px;
 }
 
 .form-extra {
   text-align: right;
   margin-top: -8px;
   margin-bottom: 8px;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+
+  .demo-account {
+    font-size: 13px;
+    color: #909399;
+  }
 }
 
 :deep(.el-input__wrapper) {
@@ -510,10 +369,6 @@ const handleResetPassword = async () => {
   }
 }
 
-:deep(.el-select__wrapper) {
-  border-radius: 8px;
-}
-
 :deep(.el-button--primary) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
@@ -524,16 +379,6 @@ const handleResetPassword = async () => {
 
   &:hover {
     background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
-  }
-}
-
-.login-footer {
-  text-align: center;
-  margin-top: 24px;
-
-  .demo-account {
-    font-size: 13px;
-    color: #909399;
   }
 }
 
