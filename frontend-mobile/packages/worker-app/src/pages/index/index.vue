@@ -77,6 +77,7 @@ import {
   type DashboardStats,
   type RecentOrder
 } from '@community/shared'
+import { TAB_BAR_PATHS } from '../../config/app'
 
 const userStore = useUserStore()
 
@@ -119,7 +120,12 @@ const loadStats = async (): Promise<void> => {
   }
 }
 
+/** tabBar 页面必须走 switchTab，用 navigateTo 跳转会静默失败，表现为点击后毫无反应 */
 const go = (url: string): void => {
+  if (TAB_BAR_PATHS.includes(url)) {
+    uni.switchTab({ url })
+    return
+  }
   uni.navigateTo({ url })
 }
 

@@ -21,14 +21,28 @@
         </view>
         <view class="actions">
           <text v-if="item.isDefault !== 1" class="action" @click="setDefault(item)">设为默认</text>
-          <text class="action" @click="editAddress(item)">编辑</text>
+          <text class="action" @click="openEdit(item)">编辑</text>
           <text class="action danger" @click="removeAddress(item)">删除</text>
         </view>
       </view>
       <view v-if="customs.length === 0" class="empty-line">暂无自定义地址</view>
     </view>
 
-    <button class="primary-btn" @click="createAddress">新增地址</button>
+    <button v-if="!editorVisible" class="primary-btn" @click="openCreate">新增地址</button>
+
+    <view v-else class="editor">
+      <text class="editor-title">{{ editorMode === 'create' ? '新增地址' : '编辑地址' }}</text>
+      <input
+        v-model="editorValue"
+        class="editor-input"
+        placeholder="请输入详细地址"
+        maxlength="200"
+      />
+      <view class="editor-actions">
+        <button class="editor-btn cancel" @click="closeEditor">取消</button>
+        <button class="editor-btn confirm" :disabled="saving" @click="submitEditor">保存</button>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -91,54 +105,60 @@ const setDefault = async (item: MyAddress): Promise<void> => {
   }
 }
 
-const createAddress = (): void => {
-  uni.showModal({
-    title: '新增地址',
-    editable: true,
-    placeholderText: '请输入详细地址',
-    success: async (res) => {
-      if (!res.confirm) return
-      const value = (res.content ?? '').trim()
-      if (!value) {
-        uni.showToast({ title: '地址不能为空', icon: 'none' })
-        return
-      }
-      try {
-        await addAddress({ address: value })
-        await load()
-      } catch (error) {
-        uni.showToast({
-          title: error instanceof Error ? error.message : '新增失败',
-          icon: 'none'
-        })
-      }
-    }
-  })
+/**
+ * 地址输入改用页面内表单，而非 uni.showModal({ editable: true })。
+ * showModal 的 editable 在 H5 平台不被支持（H5 的 showModal 只有确认/取消），
+ * 一旦依赖它，业主端在 H5 上就彻底无法新增与编辑地址
+ */
+const editorVisible = ref<boolean>(false)
+const editorMode = ref<'create' | 'edit'>('create')
+const editorValue = ref<string>('')
+const editingId = ref<number>(0)
+const saving = ref<boolean>(false)
+
+const openCreate = (): void => {
+  editorMode.value = 'create'
+  editorValue.value = ''
+  editingId.value = 0
+  editorVisible.value = true
 }
 
-const editAddress = (item: MyAddress): void => {
-  uni.showModal({
-    title: '编辑地址',
-    editable: true,
-    placeholderText: item.address,
-    success: async (res) => {
-      if (!res.confirm) return
-      const value = (res.content ?? '').trim()
-      if (!value) {
-        uni.showToast({ title: '地址不能为空', icon: 'none' })
-        return
-      }
-      try {
-        await updateAddress(item.id, { address: value })
-        await load()
-      } catch (error) {
-        uni.showToast({
-          title: error instanceof Error ? error.message : '修改失败',
-          icon: 'none'
-        })
-      }
+const openEdit = (item: MyAddress): void => {
+  editorMode.value = 'edit'
+  editorValue.value = item.address
+  editingId.value = item.id
+  editorVisible.value = true
+}
+
+const closeEditor = (): void => {
+  editorVisible.value = false
+}
+
+const submitEditor = async (): Promise<void> => {
+  if (saving.value) return
+  const value = editorValue.value.trim()
+  if (!value) {
+    uni.showToast({ title: '地址不能为空', icon: 'none' })
+    return
+  }
+
+  saving.value = true
+  try {
+    if (editorMode.value === 'create') {
+      await addAddress({ address: value })
+    } else {
+      await updateAddress(editingId.value, { address: value })
     }
-  })
+    editorVisible.value = false
+    await load()
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '保存失败',
+      icon: 'none'
+    })
+  } finally {
+    saving.value = false
+  }
 }
 
 const removeAddress = (item: MyAddress): void => {
@@ -244,5 +264,54 @@ onShow(() => {
   color: #ffffff;
   border-radius: 48rpx;
   font-size: 32rpx;
+}
+
+.editor {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 28rpx;
+}
+
+.editor-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 20rpx;
+}
+
+.editor-input {
+  width: 100%;
+  height: 88rpx;
+  background: #f8fafc;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #1e293b;
+  box-sizing: border-box;
+  margin-bottom: 24rpx;
+}
+
+.editor-actions {
+  display: flex;
+}
+
+.editor-btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 30rpx;
+  border-radius: 44rpx;
+}
+
+.editor-btn.cancel {
+  background: #f1f5f9;
+  color: #64748b;
+  margin-right: 20rpx;
+}
+
+.editor-btn.confirm {
+  background: #0066ff;
+  color: #ffffff;
 }
 </style>

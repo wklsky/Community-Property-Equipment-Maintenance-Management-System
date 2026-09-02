@@ -12,7 +12,11 @@
       </view>
     </view>
 
-    <view v-if="isEmpty" class="empty">
+    <view v-if="error" class="empty">
+      <text class="empty-text">{{ error }}，下拉可重试</text>
+    </view>
+
+    <view v-else-if="isEmpty" class="empty">
       <text class="empty-text">暂无相关工单</text>
     </view>
 
@@ -39,7 +43,7 @@
       </view>
     </view>
 
-    <view v-if="loading" class="tip">加载中...</view>
+    <view v-if="loading || loadingMore" class="tip">加载中...</view>
     <view v-else-if="finished" class="tip">没有更多了</view>
   </view>
 </template>
@@ -51,7 +55,7 @@
  * @LastEditors: wj 3363891051@qq.com
  * @LastEditTime: 2026-09-02 15:20
  * @FilePath: frontend-mobile/packages/worker-app/src/pages/repair/list.vue
- * @Description: 维修工端工单列表，区分「派给我的工单」与「我自己提交的工单」两个数据源
+ * @Description: 维修工端工单列表，只展示派给当前维修工的工单
  */
 
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
@@ -61,22 +65,23 @@ import {
   REPAIR_STATUS_NAME,
   formatDateTime,
   getAssignedOrders,
-  getMyOrders,
   resolveStatusName,
   usePagedList,
-  type RepairOrder,
-  type PageFetcher
+  type RepairOrder
 } from '@community/shared'
 
 /**
  * 维修工视角的分组。
  * 派单链路是 待处理(2) → 处理中(3) → 已完成(5)，
- * 待受理(0)/待派单(1) 属于管理员未派单阶段，维修工在此阶段无可执行动作，故不单列
+ * 待受理(0)/待派单(1) 属于管理员未派单阶段，维修工在此阶段无可执行动作，故不单列。
+ *
+ * 这里不提供"我提交的"分组：后端 create 接口仅对系统管理员与业主开放，
+ * 维修工根本无法创建工单，该分组会永远为空，只会让用户以为功能坏了
  */
 const TABS = [
-  { label: '待处理', source: 'assigned', statuses: [REPAIR_STATUS.PENDING_PROCESS, REPAIR_STATUS.PROCESSING] },
-  { label: '已完成', source: 'assigned', statuses: [REPAIR_STATUS.COMPLETED] },
-  { label: '我提交的', source: 'my', statuses: [] as number[] }
+  { label: '待处理', statuses: [REPAIR_STATUS.PENDING_PROCESS, REPAIR_STATUS.PROCESSING] },
+  { label: '已完成', statuses: [REPAIR_STATUS.COMPLETED] },
+  { label: '全部', statuses: [] as number[] }
 ] as const
 
 const STATUS_COLOR: Record<number, string> = {
@@ -91,27 +96,17 @@ const STATUS_COLOR: Record<number, string> = {
 }
 
 const activeTab = ref<string>('待处理')
-const source = ref<'assigned' | 'my'>('assigned')
 
-/**
- * 数据源由 source 决定。
- * 用闭包在 fetcher 内读取 source，而不是给 usePagedList 传两个实例：
- * 双实例会各自维护一份 list/loading，切换 tab 时会出现两个列表状态互相覆盖
- */
-const fetcher: PageFetcher<RepairOrder, { statuses?: number[] }> = (query, options) =>
-  source.value === 'assigned' ? getAssignedOrders(query, options) : getMyOrders(query, options)
-
-const { list, loading, finished, isEmpty, loadMore, setQuery, refresh } = usePagedList<
+const { list, loading, loadingMore, finished, isEmpty, error, loadMore, setQuery, refresh } = usePagedList<
   RepairOrder,
   { statuses?: number[] }
 >({
-  fetcher,
+  fetcher: getAssignedOrders,
   baseQuery: { statuses: [REPAIR_STATUS.PENDING_PROCESS, REPAIR_STATUS.PROCESSING] }
 })
 
 const switchTab = (tab: (typeof TABS)[number]): void => {
   activeTab.value = tab.label
-  source.value = tab.source
   void setQuery({ statuses: [...tab.statuses] })
 }
 

@@ -39,7 +39,14 @@ const loadNotice = async (id: number): Promise<void> => {
 }
 
 onLoad((options?: Record<string, string>) => {
-  const id = Number(options?.id ?? 0)
+  const id = Number(options?.id)
+  // 本页只能由公告列表携带 id 跳入。缺失或非法时直接返回，
+  // 否则会带着 NaN 请求 /notices/NaN，得到一条用户看不懂的 404
+  if (!Number.isFinite(id) || id <= 0) {
+    uni.showToast({ title: '公告参数无效', icon: 'none' })
+    setTimeout(() => uni.navigateBack(), 800)
+    return
+  }
   void loadNotice(id)
 })
 </script>

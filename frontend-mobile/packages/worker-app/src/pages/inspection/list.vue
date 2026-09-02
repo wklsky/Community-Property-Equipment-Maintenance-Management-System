@@ -12,7 +12,11 @@
       </view>
     </view>
 
-    <view v-if="isEmpty" class="empty">
+    <view v-if="error" class="empty">
+      <text class="empty-text">{{ error }}，下拉可重试</text>
+    </view>
+
+    <view v-else-if="isEmpty" class="empty">
       <text class="empty-text">暂无相关巡检任务</text>
     </view>
 
@@ -45,7 +49,7 @@
       </view>
     </view>
 
-    <view v-if="loading" class="tip">加载中...</view>
+    <view v-if="loading || loadingMore" class="tip">加载中...</view>
     <view v-else-if="finished" class="tip">没有更多了</view>
   </view>
 </template>
@@ -91,7 +95,7 @@ const STATUS_COLOR: Record<number, string> = {
 
 const activeTab = ref<string>('待接单')
 
-const { list, loading, finished, isEmpty, loadMore, setQuery, refresh } = usePagedList<
+const { list, loading, loadingMore, finished, isEmpty, error, loadMore, setQuery, refresh } = usePagedList<
   InspectionTask,
   { status?: number | null }
 >({

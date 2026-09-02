@@ -18,3 +18,15 @@ export const APP_IDENTITY = {
 
 /** 免登录白名单，填写 pages.json 中的页面路径（不含前导斜杠，与 uni 跳转 url 保持一致） */
 export const ROUTE_WHITE_LIST: readonly string[] = ['pages/login/index']
+
+/**
+ * tabBar 页面路径集合。
+ * uni 的 navigateTo 无法跳转到 tabBar 页面且不会给出有效提示，必须改用 switchTab；
+ * 菜单与快捷入口中同时存在两类页面，跳转前必须据此分流，否则点击后毫无反应
+ */
+export const TAB_BAR_PATHS: readonly string[] = [
+  '/pages/index/index',
+  '/pages/repair/list',
+  '/pages/inspection/list',
+  '/pages/mine/index'
+]

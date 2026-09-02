@@ -44,7 +44,7 @@
 
 import { computed } from 'vue'
 import { useUserStore } from '@community/shared'
-import { APP_IDENTITY } from '../../config/app'
+import { APP_IDENTITY, TAB_BAR_PATHS } from '../../config/app'
 
 const userStore = useUserStore()
 
@@ -52,7 +52,12 @@ const username = computed<string>(() => userStore.username)
 const roleName = computed<string>(() => userStore.roleName)
 const tenantName = computed<string>(() => userStore.tenantName)
 
+/** tabBar 页面必须走 switchTab，用 navigateTo 跳转会静默失败，表现为点击后毫无反应 */
 const go = (url: string): void => {
+  if (TAB_BAR_PATHS.includes(url)) {
+    uni.switchTab({ url })
+    return
+  }
   uni.navigateTo({ url })
 }
 

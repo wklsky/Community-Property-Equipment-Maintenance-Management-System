@@ -4,7 +4,7 @@
  * @LastEditors: wj 3363891051@qq.com
  * @LastEditTime: 2026-09-02 15:20
  * @FilePath: frontend-mobile/packages/shared/src/composables/usePagedList.ts
- * @Description: 移动端通用分页列表，统一处理加载、刷新、触底追加与空态判定
+ * @Description: 移动端通用分页列表，统一处理加载、刷新、触底追加、竞态防护与错误态
  */
 
 import { computed, ref, type Ref } from 'vue'
@@ -41,20 +41,36 @@ export function usePagedList<T, Q extends Record<string, unknown>>(
   const list = ref([]) as Ref<T[]>
   const total = ref(0)
   const pageNum = ref(DEFAULT_PAGE_NUM)
+  /** 首次加载与刷新（整页替换） */
   const loading = ref(false)
+  /** 触底追加，与 loading 分开标记，避免"加载更多"时整页被空态覆盖 */
+  const loadingMore = ref(false)
   const refreshing = ref(false)
-  const error = ref<string>('')
+  const error = ref('')
 
-  // 已取回的条数达到总数即视为到底，避免再发一次必然返回空数组的请求
-  const finished = computed<boolean>(() => list.value.length >= total.value && total.value > 0)
-  const isEmpty = computed<boolean>(() => !loading.value && list.value.length === 0)
+  /**
+   * 请求序号。
+   * 切换筛选条件时，先发出的请求可能后返回，若不加序号，
+   * 旧条件的响应会覆盖新条件的列表，表现为"点了 tab 却显示上一个 tab 的数据"
+   */
+  let requestSeq = 0
 
   let currentQuery: Q = { ...((baseQuery ?? {}) as Q) }
 
-  const requestPage = async (targetPage: number, append: boolean): Promise<void> => {
-    if (loading.value) return
+  const finished = computed<boolean>(() => list.value.length >= total.value && total.value > 0)
+  // 加载失败时不显示空态：把"请求失败"渲染成"暂无数据"会误导用户以为真的没有数据
+  const isEmpty = computed<boolean>(
+    () => !loading.value && !error.value && list.value.length === 0
+  )
 
-    loading.value = true
+  const requestPage = async (targetPage: number, append: boolean): Promise<void> => {
+    const seq = ++requestSeq
+
+    if (append) {
+      loadingMore.value = true
+    } else {
+      loading.value = true
+    }
     error.value = ''
 
     try {
@@ -62,18 +78,27 @@ export function usePagedList<T, Q extends Record<string, unknown>>(
         { ...currentQuery, pageNum: targetPage, pageSize },
         { silent, quiet: append }
       )
+      // 期间已有更新的请求发起，本次结果作废，避免旧响应覆盖新列表
+      if (seq !== requestSeq) return
+
       const records = res.data?.records ?? []
       total.value = res.data?.total ?? 0
       list.value = append ? [...list.value, ...records] : records
       pageNum.value = targetPage
     } catch (err) {
+      if (seq !== requestSeq) return
       error.value = err instanceof Error ? err.message : '加载失败'
-      // 追加失败时保持原有列表不变，用户仍可看到已加载的数据并继续下拉重试
+      // 追加失败时保留已加载数据，用户可继续下拉；整页刷新失败则清空，避免展示过期数据
       if (!append) {
         list.value = []
+        total.value = 0
       }
     } finally {
-      loading.value = false
+      // 只有仍是最新请求才收起 loading，否则会提前关闭后发起请求仍在等待的加载态
+      if (seq === requestSeq) {
+        loading.value = false
+        loadingMore.value = false
+      }
     }
   }
 
@@ -82,15 +107,16 @@ export function usePagedList<T, Q extends Record<string, unknown>>(
     await requestPage(DEFAULT_PAGE_NUM, false)
   }
 
-  /** 触底追加下一页 */
+  /** 触底追加下一页。刷新进行中不追加，否则会把第 N 页结果拼进新条件的列表 */
   const loadMore = async (): Promise<void> => {
-    if (finished.value) return
+    if (finished.value || loading.value || loadingMore.value) return
     await requestPage(pageNum.value + 1, true)
   }
 
   /**
    * 变更筛选条件并重新加载。
-   * 条件变化后必须回到第一页，否则会出现"筛选后页码越界导致列表为空"的假象
+   * 这里刻意不加 loading 锁：切换 tab 时上一次请求可能仍在途，
+   * 直接 return 会让新条件永远等不到结果，列表停留在旧数据
    */
   const setQuery = async (patch: Partial<Q>): Promise<void> => {
     currentQuery = { ...currentQuery, ...patch }
@@ -111,6 +137,7 @@ export function usePagedList<T, Q extends Record<string, unknown>>(
     list,
     total,
     loading,
+    loadingMore,
     refreshing,
     finished,
     isEmpty,

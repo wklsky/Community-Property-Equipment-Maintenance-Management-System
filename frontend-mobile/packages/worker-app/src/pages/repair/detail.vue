@@ -150,7 +150,15 @@ const submitComplete = async (): Promise<void> => {
 }
 
 onLoad((options?: Record<string, string>) => {
-  orderId.value = Number(options?.id ?? 0)
+  const id = Number(options?.id)
+  // 本页只能由工单列表携带 id 跳入。缺失或非法时直接返回，
+  // 否则会带着 NaN 请求 /repair-orders/NaN，得到一条用户看不懂的 404
+  if (!Number.isFinite(id) || id <= 0) {
+    uni.showToast({ title: '工单参数无效', icon: 'none' })
+    setTimeout(() => uni.navigateBack(), 800)
+    return
+  }
+  orderId.value = id
   void loadDetail()
 })
 </script>

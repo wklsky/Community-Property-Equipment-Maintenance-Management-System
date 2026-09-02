@@ -1,6 +1,10 @@
 <template>
   <view class="page">
-    <view v-if="isEmpty" class="empty">
+    <view v-if="error" class="empty">
+      <text class="empty-text">{{ error }}，下拉可重试</text>
+    </view>
+
+    <view v-else-if="isEmpty" class="empty">
       <text class="empty-text">暂无消息</text>
     </view>
 
@@ -21,7 +25,7 @@
       </view>
     </view>
 
-    <view v-if="loading" class="tip">加载中...</view>
+    <view v-if="loading || loadingMore" class="tip">加载中...</view>
     <view v-else-if="finished" class="tip">没有更多了</view>
   </view>
 </template>
@@ -39,7 +43,7 @@
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
 import { formatDateTime, getMessages, markMessageRead, usePagedList, type Message } from '@community/shared'
 
-const { list, loading, finished, isEmpty, loadMore, refresh } = usePagedList<Message, Record<string, never>>({
+const { list, loading, loadingMore, finished, isEmpty, error, loadMore, refresh } = usePagedList<Message, Record<string, never>>({
   fetcher: getMessages
 })
 

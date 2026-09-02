@@ -114,7 +114,15 @@ const submit = async (): Promise<void> => {
 }
 
 onLoad((options?: Record<string, string>) => {
-  taskId.value = Number(options?.id ?? 0)
+  const id = Number(options?.id)
+  // 本页只能由巡检列表携带 id 跳入。缺失或非法时直接返回，
+  // 否则会带着 NaN 请求 /inspections/tasks/NaN，得到一条用户看不懂的 404
+  if (!Number.isFinite(id) || id <= 0) {
+    uni.showToast({ title: '巡检任务参数无效', icon: 'none' })
+    setTimeout(() => uni.navigateBack(), 800)
+    return
+  }
+  taskId.value = id
   void loadTask()
 })
 </script>
