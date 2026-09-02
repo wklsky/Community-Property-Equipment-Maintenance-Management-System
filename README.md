@@ -18,10 +18,10 @@
 ├── frontend-web/        # Vue3 + TS 管理后台（详见 frontend-web/README.md）
 ├── frontend-mobile/     # pnpm workspace 移动端 Monorepo（详见 frontend-mobile/README.md）
 │   └── packages/
-│       ├── shared/      # @community/shared 公共包：登录模块、请求封装、角色常量、用户状态、路由守卫
+│       ├── shared/      # @community/shared 公共包：请求封装、角色常量、用户状态、路由守卫 + 全量业务 API / 类型 / 常量 / 分页 Hook
 │       ├── owner-app/   # @community/owner-app 业主端（仅允许"业主"登录）
 │       ├── worker-app/  # @community/worker-app 维修工端（仅允许"维修工"登录）
-│       └── legacy-app/  # @community/legacy-app 迁移前的混合端，过渡期保留
+│       └── legacy-app/  # @community/legacy-app 迁移前的混合端，过渡期保留（业务页面已全部迁出至双端）
 ├── community_schema.sql # 数据库表结构
 └── community_data.sql   # 示例数据
 ```
