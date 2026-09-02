@@ -6,9 +6,9 @@ import lombok.Getter;
 import java.util.Arrays;
 
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 10:35
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 10:35
  * @FilePath: backend/src/main/java/com/property/system/common/RepairOrderStatus.java
  * @Description: 工单状态枚举，统一维护状态码与中文名的映射关系

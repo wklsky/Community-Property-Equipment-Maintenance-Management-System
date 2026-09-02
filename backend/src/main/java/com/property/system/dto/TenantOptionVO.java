@@ -5,9 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 11:08
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 11:08
  * @FilePath: backend/src/main/java/com/property/system/dto/TenantOptionVO.java
  * @Description: 登录页租户下拉选项，仅暴露选择所需的字段

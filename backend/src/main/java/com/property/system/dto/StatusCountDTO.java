@@ -3,9 +3,9 @@ package com.property.system.dto;
 import lombok.Data;
 
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 10:50
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 10:50
  * @FilePath: backend/src/main/java/com/property/system/dto/StatusCountDTO.java
  * @Description: 按状态分组的计数结果，用于看板一次性聚合各状态数量

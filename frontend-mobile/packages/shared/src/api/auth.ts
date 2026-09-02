@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-mobile/packages/shared/src/api/auth.ts
  * @Description: 认证相关接口，两个 App 共用同一份请求定义

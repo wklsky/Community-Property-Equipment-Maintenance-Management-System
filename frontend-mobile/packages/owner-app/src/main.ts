@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-mobile/packages/owner-app/src/main.ts
  * @Description: 业主 App 入口，装配 Pinia、请求配置与路由守卫

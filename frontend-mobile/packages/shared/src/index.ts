@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-02 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-02 15:20
  * @FilePath: frontend-mobile/packages/shared/src/index.ts
  * @Description: 共享包统一出口，业主 App 与维修工 App 均从此处引入公共能力

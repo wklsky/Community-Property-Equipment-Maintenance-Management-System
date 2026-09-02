@@ -9,9 +9,9 @@
 
 <script setup lang="ts">
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-mobile/packages/owner-app/src/pages/login/index.vue
  * @Description: 业主 App 登录页，复用共享登录组件并处理登录后的落地跳转

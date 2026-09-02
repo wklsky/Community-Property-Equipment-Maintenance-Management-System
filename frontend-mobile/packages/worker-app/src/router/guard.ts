@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-mobile/packages/worker-app/src/router/guard.ts
  * @Description: 维修工 App 的守卫装配，将本 App 的身份信息注入共享守卫

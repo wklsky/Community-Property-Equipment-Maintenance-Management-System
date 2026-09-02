@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-web/src/constants/auth.ts
  * @Description: 登录模块的业务常量，集中管理防抖时长、倒计时、验证码规格等阈值

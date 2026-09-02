@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-web/src/types/http.ts
  * @Description: 定义后端统一响应体与请求层的类型契约，为仍为 JS 的 request 模块提供类型收窄入口

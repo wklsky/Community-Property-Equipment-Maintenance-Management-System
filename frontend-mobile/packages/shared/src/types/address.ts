@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-02 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-02 15:20
  * @FilePath: frontend-mobile/packages/shared/src/types/address.ts
  * @Description: 报修地址的类型定义，含系统房产与自定义地址两类来源

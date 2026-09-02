@@ -30,9 +30,9 @@
 
 <script setup lang="ts">
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-02 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-02 15:20
  * @FilePath: frontend-mobile/packages/owner-app/src/pages/device/list.vue
  * @Description: 业主端设备浏览，只读展示本社区设备台账

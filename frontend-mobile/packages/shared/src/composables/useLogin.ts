@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-mobile/packages/shared/src/composables/useLogin.ts
  * @Description: 业主 App 与维修工 App 共用的登录业务逻辑，含租户解析、模式切换、验证码倒计时与越权拦截

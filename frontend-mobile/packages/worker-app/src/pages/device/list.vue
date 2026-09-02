@@ -30,9 +30,9 @@
 
 <script setup lang="ts">
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-02 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-02 15:20
  * @FilePath: frontend-mobile/packages/worker-app/src/pages/device/list.vue
  * @Description: 维修工端设备台账，用于巡检前核对设备状态

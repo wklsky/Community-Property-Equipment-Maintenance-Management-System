@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-02 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-02 15:20
  * @FilePath: frontend-mobile/packages/shared/src/constants/business.ts
  * @Description: 工单、设备、巡检、公告的业务状态常量，取值与后端枚举严格一一对应

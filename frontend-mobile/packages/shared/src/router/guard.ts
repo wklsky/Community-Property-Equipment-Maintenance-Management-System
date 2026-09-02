@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-mobile/packages/shared/src/router/guard.ts
  * @Description: 跨 App 复用的路由守卫，统一拦截未登录访问与角色越权（如维修工进入业主 App）

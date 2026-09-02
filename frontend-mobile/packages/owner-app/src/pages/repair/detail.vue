@@ -77,9 +77,9 @@
 
 <script setup lang="ts">
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-02 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-02 15:20
  * @FilePath: frontend-mobile/packages/owner-app/src/pages/repair/detail.vue
  * @Description: 业主端工单详情，承载取消工单与服务评价两类业主专属操作

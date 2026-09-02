@@ -1,9 +1,9 @@
 package com.property.system.security;
 
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 11:05
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 11:05
  * @FilePath: backend/src/main/java/com/property/system/security/SecurityWhitelist.java
  * @Description: 免认证路径白名单，供 Spring Security 与 JWT 过滤器共用

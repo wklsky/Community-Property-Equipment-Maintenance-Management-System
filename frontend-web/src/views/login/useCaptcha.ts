@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-web/src/views/login/useCaptcha.ts
  * @Description: 图形验证码的生成与校验逻辑，对外只暴露图片 dataURL 与校验结果

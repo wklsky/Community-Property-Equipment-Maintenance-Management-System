@@ -61,9 +61,9 @@
 
 <script setup lang="ts">
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-02 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-02 15:20
  * @FilePath: frontend-mobile/packages/worker-app/src/pages/index/index.vue
  * @Description: 维修工端首页，展示工单与巡检概览及快捷入口

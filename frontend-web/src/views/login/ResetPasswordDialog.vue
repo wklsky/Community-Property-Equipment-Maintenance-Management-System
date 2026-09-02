@@ -47,9 +47,9 @@
 
 <script setup lang="ts">
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-web/src/views/login/ResetPasswordDialog.vue
  * @Description: 忘记密码弹窗，自身持有 useResetPassword 逻辑并通过 open() 对外暴露唤起入口

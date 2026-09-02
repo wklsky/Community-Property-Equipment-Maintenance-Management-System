@@ -151,9 +151,9 @@
 
 <script setup lang="ts">
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-web/src/views/Login.vue
  * @Description: 登录页视图层，仅负责布局渲染与事件绑定，全部业务逻辑下沉到 useLogin / useResetPassword

@@ -40,9 +40,9 @@
 
 <script setup lang="ts">
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-web/src/views/login/CaptchaDialog.vue
  * @Description: 图形验证码弹窗，只负责渲染与事件转发，校验逻辑由 useCaptcha 承担

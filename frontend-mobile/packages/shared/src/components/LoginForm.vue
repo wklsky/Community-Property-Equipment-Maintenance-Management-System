@@ -94,9 +94,9 @@
 
 <script setup lang="ts">
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 15:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 15:20
  * @FilePath: frontend-mobile/packages/shared/src/components/LoginForm.vue
  * @Description: 业主 App 与维修工 App 复用的登录表单组件，自身持有 useLogin 逻辑，宿主只需声明 App 身份

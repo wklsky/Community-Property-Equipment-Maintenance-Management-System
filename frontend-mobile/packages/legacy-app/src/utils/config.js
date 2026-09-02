@@ -1,7 +1,7 @@
 /**
- * @Author: wj 3363891051@qq.com
+ * @Author: kian
  * @Date: 2026-09-01 10:20
- * @LastEditors: wj 3363891051@qq.com
+ * @LastEditors: kian
  * @LastEditTime: 2026-09-01 10:20
  * @FilePath: frontend-mobile/src/utils/config.js
  * @Description: 移动端全局环境配置，统一从 Vite 环境变量注入后端服务地址
