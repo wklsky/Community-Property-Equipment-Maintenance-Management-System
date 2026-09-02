@@ -25,8 +25,23 @@ let httpConfig: HttpConfig = {
   baseURL: '/api/v1'
 }
 
+/**
+ * 合并配置时剔除 undefined 字段。
+ * 宿主 App 未提供 VITE_APP_BASE_URL 时，import.meta.env 的取值就是 undefined，
+ * 直接展开会把默认的 '/api/v1' 静默覆盖成 undefined，
+ * 请求因此打到 "undefined/repair-orders/my" 且报的是网络错误，极难定位到配置缺失
+ */
 export const configureHttp = (config: Partial<HttpConfig>): void => {
-  httpConfig = { ...httpConfig, ...config }
+  const next: Partial<HttpConfig> = {}
+  const keys = Object.keys(config) as (keyof HttpConfig)[]
+  keys.forEach((key) => {
+    if (config[key] !== undefined) {
+      // TS 无法推导"键名与值类型匹配"的动态赋值，这里用 Object.assign 收口，
+      // 避免为绕开类型检查而使用 any 污染整个请求层
+      Object.assign(next, { [key]: config[key] })
+    }
+  })
+  httpConfig = { ...httpConfig, ...next }
 }
 
 export const getHttpConfig = (): HttpConfig => httpConfig

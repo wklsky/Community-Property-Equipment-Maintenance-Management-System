@@ -16,10 +16,62 @@
       }
     },
     {
+      "path": "pages/repair/list",
+      "style": {
+        "navigationBarTitleText": "我的工单",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
       "path": "pages/mine/index",
       "style": {
         "navigationBarTitleText": "我的",
         "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/repair/create",
+      "style": {
+        "navigationBarTitleText": "提交报修"
+      }
+    },
+    {
+      "path": "pages/repair/detail",
+      "style": {
+        "navigationBarTitleText": "工单详情"
+      }
+    },
+    {
+      "path": "pages/notice/list",
+      "style": {
+        "navigationBarTitleText": "社区公告",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/notice/detail",
+      "style": {
+        "navigationBarTitleText": "公告详情"
+      }
+    },
+    {
+      "path": "pages/message/list",
+      "style": {
+        "navigationBarTitleText": "消息中心",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/address/list",
+      "style": {
+        "navigationBarTitleText": "我的地址"
+      }
+    },
+    {
+      "path": "pages/device/list",
+      "style": {
+        "navigationBarTitleText": "设备台账",
+        "enablePullDownRefresh": true
       }
     }
   ],
@@ -36,11 +88,21 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页"
+        "text": "首页",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/repair/list",
+        "text": "工单",
+        "iconPath": "static/tabbar/order.png",
+        "selectedIconPath": "static/tabbar/order-active.png"
       },
       {
         "pagePath": "pages/mine/index",
-        "text": "我的"
+        "text": "我的",
+        "iconPath": "static/tabbar/mine.png",
+        "selectedIconPath": "static/tabbar/mine-active.png"
       }
     ]
   }

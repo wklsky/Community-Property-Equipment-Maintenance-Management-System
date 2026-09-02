@@ -105,9 +105,9 @@ service.interceptors.request.use(
       config.headers.Authorization = `Bearer ${userStore.token}`
     }
 
-    if (userStore.tenantId) {
-      config.headers['X-Tenant-Id'] = userStore.tenantId
-    }
+    // 租户上下文由后端 JwtAuthenticationFilter 从 Token 中解析，不经过请求头传递。
+    // 这里刻意不再附加 X-Tenant-Id：它是一份后端从未消费的冗余契约，
+    // 保留会误导移动端实现者以为必须补发该头才能保证数据隔离
 
     if (config.method === 'get' && !config.noCache) {
       config.params = {
